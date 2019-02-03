@@ -4,8 +4,13 @@ import com.google.common.collect.Lists;
 import com.mcsimonflash.sponge.teslalibs.inventory.*;
 import com.mcsimonflash.sponge.wondertrade.WonderTrade;
 import com.mcsimonflash.sponge.wondertrade.data.TradeEntry;
+import com.pixelmonmod.pixelmon.Pixelmon;
+import com.pixelmonmod.pixelmon.api.pokemon.Pokemon;
+import com.pixelmonmod.pixelmon.api.storage.PCStorage;
 import com.pixelmonmod.pixelmon.config.PixelmonItems;
 import com.pixelmonmod.pixelmon.entities.pixelmon.EntityPixelmon;
+import com.pixelmonmod.pixelmon.enums.EnumSpecies;
+import com.pixelmonmod.pixelmon.storage.PlayerPartyStorage;
 import com.pixelmonmod.pixelmon.util.helpers.SpriteHelper;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.data.DataQuery;
@@ -80,42 +85,41 @@ public class Inventory {
 	}
 	
 	public static View createMainMenu(Player player) {
-		PlayerStorage storage = Utils.getPartyStorage(player);
-		Element[] party = new Element[7];
+		Pokemon[] party = Pixelmon.storageManager.getParty(player.getUniqueId()).getAll();
+		Element[] elements = new Element[7];
 		for (int i = 0; i < 6; i++) {
 			int slot = i;
-			party[i] = createPokemonElement(player, storage.getList()[i], "Slot " + (i + 1), inTask(a -> createTradeMenu(player, slot).open(player)));
+			elements[i] = createPokemonElement(player, party[i], "Slot " + (i + 1), inTask(a -> createTradeMenu(player, slot).open(player)));
 		}
-		party[6] = Element.of(createItem(Sponge.getRegistry().getType(ItemType.class, "pixelmon:pc").get(), "&bPC (Box " + (Utils.getPcStorage(player).lastBoxOpen + 1) + ")", "&3Click to view your PC"), inTask(a -> createPCMenu(player, -1).open(player)));
+		elements[6] = Element.of(createItem(Sponge.getRegistry().getType(ItemType.class, "pixelmon:pc").get(), "&bPC (Box " + (Pixelmon.storageManager.getPCForPlayer(player.getUniqueId()).getLastBox() + 1) + ")", "&3Click to view your PC"), inTask(a -> createPCMenu(player, -1).open(player)));
 		return createView(InventoryArchetypes.CHEST, "&3Wonder&9Trade", Layout.builder()
 				.from(MAIN)
-				.page(Arrays.asList(party))
+				.page(Arrays.asList(elements))
 				.build());
 	}
 	
 	public static View createPCMenu(Player player, int boxNum) {
-		PlayerComputerStorage storage = Utils.getPcStorage(player);
-		int box = boxNum != -1 ? boxNum : storage.lastBoxOpen;
-		Element[] pc = new Element[30];
+		PCStorage pc = Pixelmon.storageManager.getPCForPlayer(player.getUniqueId());
+		int box = boxNum != -1 ? boxNum : pc.getLastBox();
+		Element[] elements = new Element[30];
 		for (int i = 0; i < 30; i++) {
 			int pos = i;
-			pc[i] = createPokemonElement(player, storage.getBox(box).getNBTByPosition(i), "Position " + (i + 1), inTask(a -> createTradeMenu(player, box, pos).open(player)));
+			elements[i] = createPokemonElement(player, pc.get(box, pos), "Position " + (pos + 1), inTask(a -> createTradeMenu(player, box, pos).open(player)));
 		}
 		return createView(InventoryArchetypes.DOUBLE_CHEST, "&3Wonder&9Trade &8PC", Layout.builder()
 				.from(PC)
 				.replace(Page.FIRST, createPageElement("&bFirst Box ", box, 0))
-				.replace(Page.LAST, createPageElement("&bLast Box ", box, storage.getBoxList().length - 1))
-				.replace(Page.NEXT, createPageElement("&bNext Box ", box, box == storage.getBoxList().length - 1 ? box : box + 1))
+				.replace(Page.LAST, createPageElement("&bLast Box ", box, pc.getBoxCount() - 1))
+				.replace(Page.NEXT, createPageElement("&bNext Box ", box, box == pc.getBoxCount() - 1 ? box : box + 1))
 				.replace(Page.PREVIOUS, createPageElement("&bPrevious Box", box, box == 0 ? box : box - 1))
 				.replace(Page.CURRENT, createPageElement("&bCurrent Box", box, box))
-				.page(Arrays.asList(pc))
+				.page(Arrays.asList(elements))
 				.build());
 	}
 	
-	private static Element createPokemonElement(Player player, @Nullable NBTTagCompound nbt, String name, Consumer<Action.Click> action) {
-		if (nbt != null) {
-			EntityPixelmon pokemon = Utils.createEntityPixelmon(nbt, (World) player.getWorld());
-			if (Config.allowEggs || !pokemon.isEgg) {
+	private static Element createPokemonElement(Player player, Pokemon pokemon, String name, Consumer<Action.Click> action) {
+		if (pokemon != null) {
+			if (Config.allowEggs || !pokemon.isEgg()) {
 				return Element.of(createPokemonItem("&b" + name, pokemon), action);
 			} else {
 				ItemStack item = createPokemonItem("&b" + name, pokemon);
@@ -133,18 +137,17 @@ public class Inventory {
 	}
 	
 	public static View createTradeMenu(Player player, int slot) {
-		PlayerStorage storage = Utils.getPartyStorage(player);
-		return createTradeMenu(player, storage.getList()[slot], "&bSlot " + (slot + 1), a -> Utils.trade(player, slot));
+		PlayerPartyStorage party = Pixelmon.storageManager.getParty(player.getUniqueId());
+		return createTradeMenu(player, party.get(slot), "&bSlot " + (slot + 1), a -> Utils.trade(player, slot));
 	}
 	
 	public static View createTradeMenu(Player player, int box, int pos) {
-		PlayerComputerStorage storage = Utils.getPcStorage(player);
-		storage.lastBoxOpen = box;
-		return createTradeMenu(player, storage.getBox(box).getNBTByPosition(pos), "Box " + (box + 1) + ", Position " + (pos + 1), a -> Utils.trade(player, box, pos));
+		PCStorage pc = Pixelmon.storageManager.getPCForPlayer(player.getUniqueId());
+		pc.setLastBox(box);
+		return createTradeMenu(player, pc.get(box, pos), "Box " + (box + 1) + ", Position " + (pos + 1), a -> Utils.trade(player, box, pos));
 	}
 	
-	public static View createTradeMenu(Player player, NBTTagCompound nbt, String name, Consumer<Action.Click> action) {
-		EntityPixelmon pokemon = Utils.createEntityPixelmon(nbt, (World) player.getWorld());
+	public static View createTradeMenu(Player player, Pokemon pokemon, String name, Consumer<Action.Click> action) {
 		AtomicReference<Task> task = new AtomicReference<>(null);
 		View view = View.builder()
 				.archetype(InventoryArchetypes.CHEST)
@@ -221,20 +224,20 @@ public class Inventory {
 				.build();
 	}
 	
-	private static ItemStack createPokemonItem(String name, EntityPixelmon pokemon) {
+	private static ItemStack createPokemonItem(String name, Pokemon pokemon) {
 		return ItemStack.builder().fromContainer(createItem((ItemType) PixelmonItems.itemPixelmonSprite, name, Utils.getDesc(pokemon)).toContainer()
 				.set(DataQuery.of("UnsafeData", "SpriteName"), getSpriteName(pokemon)))
 				.build();
 	}
 	
-	private static String getSpriteName(EntityPixelmon pokemon) {
-		if (!pokemon.isEgg) {
-			return "pixelmon:sprites/" + (pokemon.getIsShiny() ? "shiny" : "") + "pokemon/" +
-					String.format("%03d", pokemon.baseStats.nationalPokedexNumber) +
-					SpriteHelper.getSpriteExtra(pokemon.baseStats.pixelmonName, pokemon.getForm());
-		} else if (pokemon.baseStats.pixelmonName.equalsIgnoreCase("manaphy")) {
+	private static String getSpriteName(Pokemon pokemon) {
+		if (!pokemon.isEgg()) {
+			return "pixelmon:sprites/" + (pokemon.isShiny() ? "shiny" : "") + "pokemon/" +
+					String.format("%03d", pokemon.getBaseStats().nationalPokedexNumber) +
+					SpriteHelper.getSpriteExtra(pokemon.getBaseStats().pixelmonName, pokemon.getForm());
+		} else if (pokemon.getSpecies() == EnumSpecies.Manaphy) {
 			return "pixelmon:sprites/eggs/manaphy1";
-		} else if (pokemon.getName().equalsIgnoreCase("togepi")) {
+		} else if (pokemon.getSpecies() == EnumSpecies.Togepi) {
 			return "pixelmon:sprites/eggs/togepi1";
 		} else {
 			return "pixelmon:sprites/eggs/egg1";

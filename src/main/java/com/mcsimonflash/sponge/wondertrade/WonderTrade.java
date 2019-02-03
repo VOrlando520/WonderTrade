@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Locale;
 
-@Plugin(id = "wondertrade", name = "WonderTrade", version = "1.1.0", dependencies = @Dependency(id = "pixelmon", version = "7.0.0"), authors = {"Simon_Flash", "happyzleaf"})
+@Plugin(id = "wondertrade", name = "WonderTrade", version = "1.1.0", description = "Lets you do spicy thing with ur beloved pokémon.", dependencies = @Dependency(id = "pixelmon", version = "7.0.0"), authors = {"Simon_Flash", "happyzleaf"})
 public class WonderTrade {
 	
 	private static WonderTrade instance;
