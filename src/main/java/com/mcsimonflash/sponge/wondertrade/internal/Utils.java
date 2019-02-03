@@ -4,20 +4,13 @@ import com.google.common.base.Preconditions;
 import com.mcsimonflash.sponge.wondertrade.WonderTrade;
 import com.mcsimonflash.sponge.wondertrade.data.TradeEntry;
 import com.pixelmonmod.pixelmon.Pixelmon;
-import com.pixelmonmod.pixelmon.api.enums.DeleteType;
-import com.pixelmonmod.pixelmon.api.enums.ReceiveType;
-import com.pixelmonmod.pixelmon.api.events.PixelmonDeletedEvent;
-import com.pixelmonmod.pixelmon.api.events.PixelmonReceivedEvent;
-import com.pixelmonmod.pixelmon.config.PixelmonEntityList;
+import com.pixelmonmod.pixelmon.api.pokemon.Pokemon;
+import com.pixelmonmod.pixelmon.api.storage.PCStorage;
+import com.pixelmonmod.pixelmon.api.storage.PartyStorage;
 import com.pixelmonmod.pixelmon.entities.pixelmon.EntityPixelmon;
-import com.pixelmonmod.pixelmon.enums.EnumPokemon;
-import com.pixelmonmod.pixelmon.items.heldItems.NoItem;
-import com.pixelmonmod.pixelmon.storage.PixelmonStorage;
-import com.pixelmonmod.pixelmon.storage.PlayerComputerStorage;
-import com.pixelmonmod.pixelmon.storage.PlayerStorage;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.world.World;
+import com.pixelmonmod.pixelmon.enums.EnumSpecies;
+import com.pixelmonmod.pixelmon.storage.PlayerPartyStorage;
+import net.minecraft.item.ItemStack;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
@@ -37,18 +30,14 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Utils {
-	
 	public static final UUID ZERO_UUID = new UUID(0, 0);
 	public static final Pattern MESSAGE = Pattern.compile("\\[(.+?)]\\(((?:.|\n)+?)\\)");
-	private static World world;
 	private static Task task;
 	
 	public static void initialize() {
 		if (task != null) {
 			task.cancel();
 		}
-		world = (net.minecraft.world.World) Sponge.getServer().getWorld(Sponge.getServer().getDefaultWorldName())
-				.orElseThrow(() -> new IllegalStateException("No default world."));
 		Config.load();
 		Manager.fillPool(false, true);
 		if (Config.announceInt > 0) {
@@ -56,10 +45,10 @@ public class Utils {
 					.execute(t -> {
 						int shinies = 0, legendaries = 0;
 						for (TradeEntry entry : Manager.trades) {
-							if (entry.getPokemon().getIsShiny()) {
+							if (entry.getPokemon().isShiny()) {
 								shinies++;
 							}
-							if (EnumPokemon.legendaries.contains(entry.getPokemon().getSpecies().name)) {
+							if (EnumSpecies.legendaries.contains(entry.getPokemon().getSpecies().name)) {
 								legendaries++;
 							}
 						}
@@ -110,18 +99,6 @@ public class Utils {
 		return builder.toText();
 	}
 	
-	public static EntityPixelmon createEntityPixelmon(NBTTagCompound nbt, World world) {
-		return (EntityPixelmon) PixelmonEntityList.createEntityFromNBT(nbt, world);
-	}
-	
-	public static PlayerStorage getPartyStorage(Player player) {
-		return PixelmonStorage.pokeBallManager.getPlayerStorage((EntityPlayerMP) player).orElseThrow(() -> new IllegalStateException("No player storage."));
-	}
-	
-	public static PlayerComputerStorage getPcStorage(Player player) {
-		return PixelmonStorage.computerManager.getPlayerStorage((EntityPlayerMP) player);
-	}
-	
 	public static long getCooldown(Player player) {
 		try {
 			return Integer.parseInt(player.getOption("wondertrade:cooldown").orElse(String.valueOf(Config.defCooldown)));
@@ -131,36 +108,33 @@ public class Utils {
 		}
 	}
 	
+	public static void recallAllPokemon(PartyStorage storage) {
+		for (Pokemon p : storage.getAll()) {
+			p.ifEntityExists(EntityPixelmon::retrieve);
+		}
+	}
+	
 	public static void trade(Player player, int slot) {
-		PlayerStorage storage = getPartyStorage(player);
-		storage.recallAllPokemon();
-		NBTTagCompound nbt = storage.getList()[slot];
-		TradeEntry entry = trade(player, nbt);
-		storage.removeFromPartyPlayer(slot);
-		Pixelmon.EVENT_BUS.post(new PixelmonDeletedEvent((EntityPlayerMP) player, nbt, DeleteType.COMMAND));
-		storage.addToParty(entry.getPokemon(), slot);
-		Pixelmon.EVENT_BUS.post(new PixelmonReceivedEvent((EntityPlayerMP) player, ReceiveType.Command, entry.getPokemon()));
-		storage.sendUpdatedList();
+		PlayerPartyStorage party = Pixelmon.storageManager.getParty(player.getUniqueId());
+		recallAllPokemon(party);
+		TradeEntry entry = trade(player, party.getAll()[slot]);
+		party.set(slot, entry.getPokemon());
 	}
 	
 	public static void trade(Player player, int box, int pos) {
-		PlayerComputerStorage storage = getPcStorage(player);
-		NBTTagCompound nbt = storage.getBox(box).getNBTByPosition(pos);
-		TradeEntry entry = trade(player, nbt);
-		storage.getBox(box).changePokemon(pos, entry.getPokemon().serializeNBT());
-		Pixelmon.EVENT_BUS.post(new PixelmonDeletedEvent((EntityPlayerMP) player, nbt, DeleteType.COMMAND));
-		Pixelmon.EVENT_BUS.post(new PixelmonReceivedEvent((EntityPlayerMP) player, ReceiveType.Command, entry.getPokemon()));
+		PCStorage pc = Pixelmon.storageManager.getPCForPlayer(player.getUniqueId());
+		TradeEntry entry = trade(player, pc.get(box, pos));
+		pc.set(box, pos, entry.getPokemon());
 	}
 	
-	private static TradeEntry trade(Player player, NBTTagCompound nbt) {
-		EntityPixelmon pokemon = createEntityPixelmon(nbt, (World) player.getWorld());
-		Preconditions.checkArgument(Config.allowEggs || !pokemon.isEgg, WonderTrade.getMessage(player.getLocale(), "wondertrade.trade.no-eggs"));
+	private static TradeEntry trade(Player player, Pokemon pokemon) {
+		Preconditions.checkArgument(Config.allowEggs || !pokemon.isEgg(), WonderTrade.getMessage(player.getLocale(), "wondertrade.trade.no-eggs"));
 		TradeEntry entry = new TradeEntry(pokemon, player.getUniqueId(), LocalDateTime.now());
 		logTransaction(player, entry, true);
 		entry = Manager.trade(entry).refine(player);
 		logTransaction(player, entry, false);
 		Object[] args = new Object[]{"player", player.getName(), "traded", getShortDesc(pokemon), "traded-details", getDesc(pokemon), "received", getShortDesc(entry.getPokemon()), "received-details", getDesc(entry.getPokemon())};
-		if (Config.broadcastTrades && (pokemon.getIsShiny() || EnumPokemon.legendaries.contains(pokemon.getSpecies().name))) {
+		if (Config.broadcastTrades && (pokemon.isShiny() || EnumSpecies.legendaries.contains(pokemon.getSpecies().name))) {
 			Sponge.getServer().getBroadcastChannel().send(WonderTrade.getPrefix().concat(parseText(WonderTrade.getMessage(Locales.DEFAULT, "wondertrade.trade.success.broadcast", args).toString())));
 		} else {
 			player.sendMessage(WonderTrade.getPrefix().concat(parseText(WonderTrade.getMessage(Locales.DEFAULT, "wondertrade.trade.success.message", args).toString())));
@@ -169,51 +143,46 @@ public class Utils {
 	}
 	
 	public static void take(Player player, int index) {
-		PlayerStorage storage = getPartyStorage(player);
-		storage.recallAllPokemon();
+		PlayerPartyStorage party = Pixelmon.storageManager.getParty(player.getUniqueId());
+		recallAllPokemon(party);
 		TradeEntry entry = Manager.take(index).refine(player);
 		logTransaction(player, entry, false);
-		storage.addToParty(entry.getPokemon());
+		party.add(entry.getPokemon());
 	}
 	
 	public static void logTransaction(User user, TradeEntry entry, boolean add) {
 		WonderTrade.getLogger().info(user.getName() + (add ? " added " : " removed ") + " a " + getShortDesc(entry.getPokemon()) + (add ? "." : " (added by " + entry.getOwnerName() + ")."));
 	}
 	
-	public static String getShortDesc(EntityPixelmon pokemon) {
-		return pokemon.isEgg ? "mysterious egg" : "level " + pokemon.getLvl().getLevel() + (pokemon.getIsShiny() ? " shiny " : " ") + (EnumPokemon.legendaries.contains(pokemon.getSpecies().name) ? "legendary " : "") + pokemon.getSpecies().name;
+	public static String getShortDesc(Pokemon pokemon) {
+		return pokemon.isEgg() ? "mysterious egg" : "level " + pokemon.getLevel() + (pokemon.isShiny() ? " shiny " : " ") + (EnumSpecies.legendaries.contains(pokemon.getSpecies().name) ? "legendary " : "") + pokemon.getSpecies().name;
 	}
 	
-	public static String getDesc(EntityPixelmon pokemon) {
-		if (pokemon.isEgg) {
+	public static String getDesc(Pokemon pokemon) {
+		if (pokemon.isEgg()) {
 			return "&3Pokemon: &9???";
 		}
 		StringBuilder builder = new StringBuilder("&3Pokemon: &9").append(pokemon.getSpecies().name);
-		if (pokemon.getItemHeld() != NoItem.noItem) {
-			builder.append("\n&3Held Item: &9").append(pokemon.getItemHeld().getUnlocalizedName());
+		if (pokemon.getHeldItem() != ItemStack.EMPTY) {
+			builder.append("\n&3Held Item: &9").append(pokemon.getHeldItem().getUnlocalizedName());
 		}
 		builder.append("\n&3Ability: &9").append(pokemon.getAbility().getName())
-				.append("\n&3Level: &9").append(pokemon.getLvl().getLevel())
-				.append("\n&3Shiny: &9").append(pokemon.getIsShiny())
+				.append("\n&3Level: &9").append(pokemon.getLevel())
+				.append("\n&3Shiny: &9").append(pokemon.isShiny())
 				.append("\n&3EVs: &9")
-				.append(pokemon.stats.evs.hp).append("&3/&9")
-				.append(pokemon.stats.evs.attack).append("&3/&9")
-				.append(pokemon.stats.evs.defence).append("&3/&9")
-				.append(pokemon.stats.evs.specialAttack).append("&3/&9")
-				.append(pokemon.stats.evs.specialDefence).append("&3/&9")
-				.append(pokemon.stats.evs.speed)
+				.append(pokemon.getStats().evs.hp).append("&3/&9")
+				.append(pokemon.getStats().evs.attack).append("&3/&9")
+				.append(pokemon.getStats().evs.defence).append("&3/&9")
+				.append(pokemon.getStats().evs.specialAttack).append("&3/&9")
+				.append(pokemon.getStats().evs.specialDefence).append("&3/&9")
+				.append(pokemon.getStats().evs.speed)
 				.append("\n&3IVs: &9")
-				.append(pokemon.stats.ivs.HP).append("&3/&9")
-				.append(pokemon.stats.ivs.Attack).append("&3/&9")
-				.append(pokemon.stats.ivs.Defence).append("&3/&9")
-				.append(pokemon.stats.ivs.SpAtt).append("&3/&9")
-				.append(pokemon.stats.ivs.SpDef).append("&3/&9")
-				.append(pokemon.stats.ivs.Speed);
+				.append(pokemon.getStats().ivs.hp).append("&3/&9")
+				.append(pokemon.getStats().ivs.attack).append("&3/&9")
+				.append(pokemon.getStats().ivs.defence).append("&3/&9")
+				.append(pokemon.getStats().ivs.specialAttack).append("&3/&9")
+				.append(pokemon.getStats().ivs.specialDefence).append("&3/&9")
+				.append(pokemon.getStats().ivs.speed);
 		return builder.toString();
 	}
-	
-	public static World getWorld() {
-		return world;
-	}
-	
 }
