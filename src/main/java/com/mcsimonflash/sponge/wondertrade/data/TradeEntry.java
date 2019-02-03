@@ -1,7 +1,6 @@
 package com.mcsimonflash.sponge.wondertrade.data;
 
 import com.mcsimonflash.sponge.wondertrade.internal.Utils;
-import com.pixelmonmod.pixelmon.Pixelmon;
 import com.pixelmonmod.pixelmon.api.pokemon.Pokemon;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.entity.living.player.User;
@@ -40,7 +39,7 @@ public class TradeEntry {
 	
 	public TradeEntry refine(User user) {
 		if (owner.equals(Utils.ZERO_UUID)) {
-			Pixelmon.storageManager.getParty(user.getUniqueId()).add(pokemon);
+			pokemon.setOriginalTrainer(user.getUniqueId(), user.getName());
 		}
 		return this;
 	}

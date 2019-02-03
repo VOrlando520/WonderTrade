@@ -110,7 +110,9 @@ public class Utils {
 	
 	public static void recallAllPokemon(PartyStorage storage) {
 		for (Pokemon p : storage.getAll()) {
-			p.ifEntityExists(EntityPixelmon::retrieve);
+			if (p != null) {
+				p.ifEntityExists(EntityPixelmon::retrieve);
+			}
 		}
 	}
 	
