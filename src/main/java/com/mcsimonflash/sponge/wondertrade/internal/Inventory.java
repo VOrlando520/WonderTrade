@@ -7,10 +7,11 @@ import com.mcsimonflash.sponge.wondertrade.data.TradeEntry;
 import com.pixelmonmod.pixelmon.Pixelmon;
 import com.pixelmonmod.pixelmon.api.pokemon.Pokemon;
 import com.pixelmonmod.pixelmon.api.storage.PCStorage;
+import com.pixelmonmod.pixelmon.client.gui.GuiResources;
 import com.pixelmonmod.pixelmon.config.PixelmonItems;
+import com.pixelmonmod.pixelmon.entities.pixelmon.EnumSpecialTexture;
 import com.pixelmonmod.pixelmon.enums.EnumSpecies;
 import com.pixelmonmod.pixelmon.storage.PlayerPartyStorage;
-import com.pixelmonmod.pixelmon.util.helpers.SpriteHelper;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.data.DataQuery;
 import org.spongepowered.api.data.key.Keys;
@@ -229,17 +230,14 @@ public class Inventory {
 	}
 	
 	private static String getSpriteName(Pokemon pokemon) {
-		if (!pokemon.isEgg()) {
-			return "pixelmon:sprites/" + (pokemon.isShiny() ? "shiny" : "") + "pokemon/" +
-					String.format("%03d", pokemon.getBaseStats().nationalPokedexNumber) +
-					SpriteHelper.getSpriteExtra(pokemon.getBaseStats().pixelmonName, pokemon.getForm());
-		} else if (pokemon.getSpecies() == EnumSpecies.Manaphy) {
-			return "pixelmon:sprites/eggs/manaphy1";
-		} else if (pokemon.getSpecies() == EnumSpecies.Togepi) {
-			return "pixelmon:sprites/eggs/togepi1";
+		if (pokemon.isEgg()) {
+			EnumSpecies species = pokemon.getSpecies();
+			int cycles = pokemon.getEggCycles();
+			return "pixelmon:sprites/eggs/"
+					+ (species == EnumSpecies.Togepi ? "togepi" : species == EnumSpecies.Manaphy ? "manaphy" : "egg")
+					+ (cycles > 10 ? "1" : cycles > 5 ? "2" : "3");
 		} else {
-			return "pixelmon:sprites/eggs/egg1";
+			return "pixelmon:" + GuiResources.getSpritePath(pokemon.getSpecies(), pokemon.getForm(), pokemon.getGender(), pokemon.getSpecialTexture() != EnumSpecialTexture.None, pokemon.isShiny());
 		}
 	}
-	
 }
