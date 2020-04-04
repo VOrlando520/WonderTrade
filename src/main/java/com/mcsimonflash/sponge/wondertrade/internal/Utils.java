@@ -162,28 +162,28 @@ public class Utils {
 	
 	public static String getDesc(Pokemon pokemon) {
 		if (pokemon.isEgg()) {
-			return "&3Pokemon: &9???";
+			return "&7Pokemon: &e???";
 		}
-		StringBuilder builder = new StringBuilder("&3Pokemon: &9").append(pokemon.getSpecies().name);
+		StringBuilder builder = new StringBuilder("&3Pokemon: &b").append(pokemon.getSpecies().name);
 		if (pokemon.getHeldItem() != ItemStack.EMPTY) {
-			builder.append("\n&3Held Item: &9").append(pokemon.getHeldItem().getUnlocalizedName());
+			builder.append("\n&7Held Item: &a").append(pokemon.getHeldItem().getUnlocalizedName());
 		}
-		builder.append("\n&3Ability: &9").append(pokemon.getAbility().getName())
-				.append("\n&3Level: &9").append(pokemon.getLevel())
-				.append("\n&3Shiny: &9").append(pokemon.isShiny())
-				.append("\n&3EVs: &9")
-				.append(pokemon.getStats().evs.hp).append("&3/&9")
-				.append(pokemon.getStats().evs.attack).append("&3/&9")
-				.append(pokemon.getStats().evs.defence).append("&3/&9")
-				.append(pokemon.getStats().evs.specialAttack).append("&3/&9")
-				.append(pokemon.getStats().evs.specialDefence).append("&3/&9")
+		builder.append("\n&7Ability: &e").append(pokemon.getAbility().getName())
+				.append("\n&7Level: &e").append(pokemon.getLevel())
+				.append("\n&7Shiny: &e").append(pokemon.isShiny())
+				.append("\n&7EVs: &e")
+				.append(pokemon.getStats().evs.hp).append("&7/&e")
+				.append(pokemon.getStats().evs.attack).append("&7/&e")
+				.append(pokemon.getStats().evs.defence).append("&7/&e")
+				.append(pokemon.getStats().evs.specialAttack).append("&7/&e")
+				.append(pokemon.getStats().evs.specialDefence).append("&7/&e")
 				.append(pokemon.getStats().evs.speed)
-				.append("\n&3IVs: &9")
-				.append(pokemon.getStats().ivs.hp).append("&3/&9")
-				.append(pokemon.getStats().ivs.attack).append("&3/&9")
-				.append(pokemon.getStats().ivs.defence).append("&3/&9")
-				.append(pokemon.getStats().ivs.specialAttack).append("&3/&9")
-				.append(pokemon.getStats().ivs.specialDefence).append("&3/&9")
+				.append("\n&7IVs: &e")
+				.append(pokemon.getStats().ivs.hp).append("&7/&e")
+				.append(pokemon.getStats().ivs.attack).append("&7/&e")
+				.append(pokemon.getStats().ivs.defence).append("&7/&e")
+				.append(pokemon.getStats().ivs.specialAttack).append("&7/&e")
+				.append(pokemon.getStats().ivs.specialDefence).append("&7/&e")
 				.append(pokemon.getStats().ivs.speed);
 		return builder.toString();
 	}

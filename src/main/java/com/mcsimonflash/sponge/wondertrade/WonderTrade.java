@@ -19,7 +19,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Locale;
 
-@Plugin(id = "wondertrade", name = "WonderTrade", version = "1.1.1", description = "Lets you do spicy thing with ur beloved pokémon.", dependencies = @Dependency(id = "pixelmon", version = "7.0.0"), authors = {"Simon_Flash", "happyzleaf"})
+@Plugin(id = "wondertrade", name = "ClashWonderTrade", version = "1.1.2", description = "PokeClash updated WT.", dependencies = @Dependency(id = "pixelmon", version = "7.2.2"), authors = {"Simon_Flash", "happyzleaf", "Vince"})
 public class WonderTrade {
 	
 	private static WonderTrade instance;
@@ -45,7 +45,7 @@ public class WonderTrade {
 			logger.error("An error occurred initializing message translations. Using internal copies.");
 			messages = com.mcsimonflash.sponge.teslalibs.message.MessageService.of(container, "messages");
 		}
-		prefix = Utils.toText("&3Wonder&9Trade&8: &7");
+		prefix = Utils.toText("&6WonderTrade: &7");
 	}
 	
 	public static WonderTrade getInstance() {

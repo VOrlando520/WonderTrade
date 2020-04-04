@@ -35,23 +35,28 @@ import java.util.function.Consumer;
 
 public class Inventory {
 	
-	private static final Element LIGHT_BLUE = Element.of(ItemStack.builder()
+	private static final Element RED = Element.of(ItemStack.builder()
 			.itemType(ItemTypes.STAINED_GLASS_PANE)
-			.add(Keys.DYE_COLOR, DyeColors.LIGHT_BLUE)
+			.add(Keys.DYE_COLOR, DyeColors.RED)
 			.build());
-	private static final Element DARK_BLUE = Element.of(ItemStack.builder()
+	private static final Element BLACK = Element.of(ItemStack.builder()
 			.itemType(ItemTypes.STAINED_GLASS_PANE)
-			.add(Keys.DYE_COLOR, DyeColors.BLUE)
+			.add(Keys.DYE_COLOR, DyeColors.BLACK)
+			.build());
+	private static final Element WHITE = Element.of(ItemStack.builder()
+			.itemType(ItemTypes.STAINED_GLASS_PANE)
+			.add(Keys.DYE_COLOR, DyeColors.RED)
 			.build());
 	private static final Element CLOSE = Element.of(createItem(ItemTypes.BARRIER, "&cClose", "&4Close the menu"), inTask(a -> a.getPlayer().closeInventory()));
 	private static final Layout MAIN = Layout.builder()
-			.set(DARK_BLUE, 0, 2, 4, 6, 8, 18, 20, 22, 24, 26)
-			.set(LIGHT_BLUE, 1, 3, 5, 7, 9, 17, 19, 21, 23, 25)
+			.set(WHITE, 18, 19, 20, 21, 22, 23, 24, 25, 26)
+			.set(RED, 0, 1, 2, 3, 4, 5, 6, 7, 8)
+			.set(BLACK, 9, 17)
 			.build();
 	private static final Element MENU = Element.of(createItem((ItemType) PixelmonItems.tradeMonitor, "&bMenu", "&3Return to the main menu"), inTask(a -> createMainMenu(a.getPlayer()).open(a.getPlayer())));
 	private static final Layout PAGE = Layout.builder()
-			.set(DARK_BLUE, 0, 2, 4, 6, 8, 18, 26, 36, 38, 40, 42, 44)
-			.set(LIGHT_BLUE, 1, 3, 5, 7, 9, 17, 27, 35, 37, 39, 41, 43, 45, 53)
+			.set(BLACK, 0, 2, 4, 6, 8, 18, 26, 36, 38, 40, 42, 44)
+			.set(RED, 1, 3, 5, 7, 9, 17, 27, 35, 37, 39, 41, 43, 45, 53)
 			.set(MENU, 46)
 			.set(Page.FIRST, 47)
 			.set(Page.PREVIOUS, 48)
@@ -61,8 +66,8 @@ public class Inventory {
 			.set(CLOSE, 52)
 			.build();
 	private static final Layout PC = Layout.builder()
-			.set(DARK_BLUE, 0, 6, 8, 18, 24, 26, 36, 42, 44)
-			.set(LIGHT_BLUE, 9, 15, 17, 27, 33, 35, 45, 51, 53)
+			.set(BLACK, 0, 6, 8, 18, 24, 26, 36, 42, 44)
+			.set(RED, 9, 15, 17, 27, 33, 35, 45, 51, 53)
 			.set(Page.FIRST, 7)
 			.set(Page.PREVIOUS, 16)
 			.set(Page.CURRENT, 25)
@@ -91,7 +96,7 @@ public class Inventory {
 			elements[i] = createPokemonElement(player, party[i], "Slot " + (i + 1), inTask(a -> createTradeMenu(player, slot).open(player)));
 		}
 		elements[6] = Element.of(createItem(Sponge.getRegistry().getType(ItemType.class, "pixelmon:pc").get(), "&bPC (Box " + (Pixelmon.storageManager.getPCForPlayer(player.getUniqueId()).getLastBox() + 1) + ")", "&3Click to view your PC"), inTask(a -> createPCMenu(player, -1).open(player)));
-		return createView(InventoryArchetypes.CHEST, "&3Wonder&9Trade", Layout.builder()
+		return createView(InventoryArchetypes.CHEST, "&6WonderTrade", Layout.builder()
 				.from(MAIN)
 				.page(Arrays.asList(elements))
 				.build());
@@ -105,7 +110,7 @@ public class Inventory {
 			int pos = i;
 			elements[i] = createPokemonElement(player, pc.get(box, pos), "Position " + (pos + 1), inTask(a -> createTradeMenu(player, box, pos).open(player)));
 		}
-		return createView(InventoryArchetypes.DOUBLE_CHEST, "&3Wonder&9Trade &8PC", Layout.builder()
+		return createView(InventoryArchetypes.DOUBLE_CHEST, "&cPoke&3Clash &6WT &8PC", Layout.builder()
 				.from(PC)
 				.replace(Page.FIRST, createPageElement("&bFirst Box ", box, 0))
 				.replace(Page.LAST, createPageElement("&bLast Box ", box, pc.getBoxCount() - 1))
@@ -150,7 +155,7 @@ public class Inventory {
 		AtomicReference<Task> task = new AtomicReference<>(null);
 		View view = View.builder()
 				.archetype(InventoryArchetypes.CHEST)
-				.property(InventoryTitle.of(Utils.toText("&3Wonder&9Trade &8Trade")))
+				.property(InventoryTitle.of(Utils.toText("&cPoke&3Clash &6WonderTrade ")))
 				.onClose(a -> { if (task.get() != null) task.get().cancel(); })
 				.build(WonderTrade.getContainer());
 		Element confirm;
@@ -183,8 +188,8 @@ public class Inventory {
 		}
 		return view.define(Layout.builder()
 				.from(MAIN)
-				.set(DARK_BLUE, 12, 14)
-				.set(LIGHT_BLUE, 11, 15)
+				.set(RED, 12, 14)
+				.set(BLACK, 11, 15)
 				.set(Element.of(createPokemonItem(name, pokemon)), 13)
 				.set(confirm, 10)
 				.set(Element.of(createItem(ItemTypes.MAGMA_CREAM, "&cCancel", "&4Cancel this trade"), inTask(a -> createMainMenu(player).open(player))), 16)
@@ -194,7 +199,7 @@ public class Inventory {
 	public static Page createPoolMenu(boolean take) {
 		Page page = Page.builder()
 				.archetype(InventoryArchetypes.DOUBLE_CHEST)
-				.property(InventoryTitle.of(Utils.toText("&3Wonder&9Trade &8Pool")))
+				.property(InventoryTitle.of(Utils.toText("&cPoke&3Clash &6WT &8Pool")))
 				.layout(PAGE)
 				.build(WonderTrade.getContainer());
 		Element[] pool = new Element[Config.poolSize];
