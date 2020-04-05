@@ -22,7 +22,7 @@ import java.util.stream.Stream;
 @Children({Menu.class, Pool.class, Regen.class, Take.class, Trade.class})
 public class Base extends Command {
 	
-	private static final Text LINKS = Text.of("                       ", CmdUtils.link("Ore Project", Utils.parseURL("https://ore.spongepowerd.org/Simon_Flash/WonderTrade")), TextColors.GRAY, " | ", CmdUtils.link("Support Discord", Utils.parseURL("https://discord.gg/4wayq37")));
+	private static final Text LINKS = Text.of("                       ", CmdUtils.link("PokeClash Discord", Utils.parseURL("https://discord.gg/UvVm3ZK")));
 	
 	@Inject
 	protected Base(Settings settings) {

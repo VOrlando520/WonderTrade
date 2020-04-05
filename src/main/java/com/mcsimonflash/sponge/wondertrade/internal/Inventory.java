@@ -45,7 +45,7 @@ public class Inventory {
 			.build());
 	private static final Element WHITE = Element.of(ItemStack.builder()
 			.itemType(ItemTypes.STAINED_GLASS_PANE)
-			.add(Keys.DYE_COLOR, DyeColors.RED)
+			.add(Keys.DYE_COLOR, DyeColors.WHITE)
 			.build());
 	private static final Element CLOSE = Element.of(createItem(ItemTypes.BARRIER, "&cClose", "&4Close the menu"), inTask(a -> a.getPlayer().closeInventory()));
 	private static final Layout MAIN = Layout.builder()

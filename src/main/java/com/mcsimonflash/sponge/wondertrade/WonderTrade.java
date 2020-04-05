@@ -19,7 +19,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Locale;
 
-@Plugin(id = "wondertrade", name = "ClashWonderTrade", version = "1.1.2", description = "PokeClash updated WT.", dependencies = @Dependency(id = "pixelmon", version = "7.2.2"), authors = {"Simon_Flash", "happyzleaf", "Vince"})
+@Plugin(id = "wondertrade", name = "WonderTrade", version = "1.1.2-ClashEdition", description = "PokeClash updated WT.", dependencies = @Dependency(id = "pixelmon", version = "7.2.2"), authors = {"Simon_Flash", "happyzleaf", "Vince"})
 public class WonderTrade {
 	
 	private static WonderTrade instance;

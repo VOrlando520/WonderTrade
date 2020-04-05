@@ -41,7 +41,7 @@ dependencies {
 }
 
 jar {
-    archiveName = "${project.name}-s${spongeversion[0..2]}-t${teslaversion}-v${version}.jar"
+    archiveName = "${project.name}-s${spongeversion[0..2]}-t${teslaversion}-v${version}-PokeClash.jar"
 }
 
 shadowJar {
